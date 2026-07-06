@@ -95,9 +95,11 @@ export default function WalletPage() {
 
         {/* Action Buttons */}
         <div className="flex gap-4 mb-12">
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-6">
-            Deposit Funds
-          </Button>
+          <Link href="/payments/methods">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 px-6">
+              Deposit Funds
+            </Button>
+          </Link>
           <Button variant="outline" className="px-6">
             Request Withdrawal
           </Button>
