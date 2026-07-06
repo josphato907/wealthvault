@@ -2,8 +2,8 @@
 
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { user, userProfile, transaction } from '@/lib/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { userProfile, transaction } from '@/lib/db/schema'
+import { eq, and, sql } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 
@@ -28,26 +28,27 @@ async function getAdminId() {
 export async function getAdminUsers() {
   await getAdminId() // Verify admin access
 
-  const users = await db
-    .select({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      profile: userProfile,
-    })
-    .from(user)
-    .leftJoin(userProfile, eq(userProfile.userId, user.id))
+  // Query users from neon_auth schema since Better Auth manages them there
+  const users = await db.execute(sql`
+    SELECT 
+      u."id",
+      u."email",
+      u."name",
+      up.*
+    FROM neon_auth."user" u
+    LEFT JOIN public.user_profile up ON up."userId" = u."id"
+  `)
 
-  return users.map((u) => ({
+  return users.rows.map((u: any) => ({
     id: u.id,
     email: u.email,
     name: u.name,
-    profile: u.profile
+    profile: u.userId
       ? {
-          accountVerified: u.profile.accountVerified,
-          totalInvested: u.profile.totalInvested,
-          totalEarned: u.profile.totalEarned,
-          totalWithdrawn: u.profile.totalWithdrawn,
+          accountVerified: u.accountVerified,
+          totalInvested: u.totalInvested,
+          totalEarned: u.totalEarned,
+          totalWithdrawn: u.totalWithdrawn,
         }
       : null,
   }))
@@ -107,7 +108,10 @@ export async function rejectTransaction(transactionId: string, reason: string) {
 export async function getAdminStats() {
   await getAdminId() // Verify admin access
 
-  const totalUsers = await db.select().from(user)
+  // Get total users from neon_auth schema
+  const totalUsersResult = await db.execute(sql`SELECT COUNT(*) as count FROM neon_auth."user"`)
+  const totalUsers = parseInt(totalUsersResult.rows[0]?.count || '0')
+  
   const verifiedUsers = await db
     .select()
     .from(userProfile)
@@ -125,7 +129,7 @@ export async function getAdminStats() {
   const totalEarned = stats.reduce((sum, s) => sum + parseFloat(s.totalEarned || '0'), 0)
 
   return {
-    totalUsers: totalUsers.length,
+    totalUsers,
     verifiedUsers: verifiedUsers.length,
     totalInvested,
     totalEarned,
