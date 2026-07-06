@@ -1,18 +1,18 @@
-'use client'
+import { Suspense } from 'react'
+import { InvestmentConfirmClient } from '@/components/investment-confirm-client'
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { authClient } from '@/lib/auth-client'
-import { getInvestmentPlans, createInvestment } from '@/app/actions/investments'
-
-interface InvestmentPlan {
-  id: string
-  name: string
-  dailyProfit: string
-  duration: number
-  totalROI: string
+export default function ConfirmInvestmentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading investment details...</p>
+        </div>
+      </div>
+    }>
+      <InvestmentConfirmClient />
+    </Suspense>
+  )
 }
 
 export default function ConfirmInvestmentPage() {
